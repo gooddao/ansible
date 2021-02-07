@@ -1,0 +1,70 @@
+#https://docs.projectcalico.org/v3.6/getting-started/kubernetes/
+
+- name: get public ip
+  shell: ip addr show eth1 | grep -o 'inet [^ ]*' | awk '{print $2;}' | sed 's/\/.*//g'
+  register: master_ip_out
+- name: Initialize Kubernetes master with kubeadm init.
+  command: >
+          kubeadm init
+          --image-repository registry.aliyuncs.com/google_containers
+          --pod-network-cidr={{ k8s_master_pod_network_cidr }}
+          --apiserver-advertise-address={{ master_ip_out.stdout_lines[0] }}
+          --apiserver-cert-extra-sans={{ master_ip_out.stdout_lines[0] }}
+          --kubernetes-version {{ kubernetes_version_kubeadm }}
+  args:
+      creates: /etc/kubernetes/manifests/kube-apiserver.yaml
+  become: yes
+
+- name: Create .kube dir for {{ k8s_master_admin_user }} user
+  file:
+      path: "/home/{{ k8s_master_admin_user }}/.kube"
+      state: directory
+
+- name: Create .kube dir for root user
+  file:
+    path: "/root/.kube"
+    state: directory
+
+- name: Copy kube config to {{ k8s_master_admin_user }} home .kube dir 
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest:  /home/{{ k8s_master_admin_user }}/.kube/config
+    remote_src: yes
+    owner: "{{ k8s_master_admin_user }}"
+    group: "{{ k8s_master_admin_group }}"
+    mode: 0660
+
+- name: Copy kube config to root home .kube dir
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest:  /root/.kube/config
+    remote_src: yes
+    owner: "root"
+    group: "root"
+    mode: 0660
+
+#Rewrite calico replacing defaults
+#https://docs.projectcalico.org/getting-started/kubernetes/self-managed-onprem/onpremises
+- name: Rewrite calico.yaml
+  template:
+     src: calico/3.15/calico.yaml
+     dest: /home/{{ k8s_master_admin_user }}/calico.yaml 
+    
+- name: Install Calico (using Kubernetes API datastore)
+  become: false
+  command: kubectl apply -f /home/{{ k8s_master_admin_user }}/calico.yaml 
+  
+# Step 2.6 from https://kubernetes.io/blog/2019/03/15/kubernetes-setup-using-ansible-and-vagrant/
+- name: copy get join command script
+  copy:
+    src: files/get-join-command.sh
+    dest: /root/get-join-command.sh
+    mode: 0755
+
+- name: Generate join command
+  shell: /root/get-join-command.sh
+  register: join_command
+
+- name: Copy join command for {{ k8s_cluster_name }} cluster to local file
+  become: false
+  local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="../{{ k8s_cluster_name }}-join-command"

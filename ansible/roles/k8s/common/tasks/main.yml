@@ -1,0 +1,32 @@
+
+- name: Remove current swaps from fstab
+  lineinfile:
+    dest: /etc/fstab
+    regexp: '^/[\S]+\s+none\s+swap '
+    state: absent
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Add k8s_common_admin_user user to docker group
+  user: 
+    name: "{{ k8s_common_admin_user }}"
+    group: docker
+
+- name: Check that docker service is started
+  service: 
+        name: docker 
+        state: started
+
+- name: get public ip
+  shell: ip addr show eth1 | grep -o 'inet [^ ]*' | awk '{print $2;}' | sed 's/\/.*//g'
+  register: node_public_ip
+
+- name: Configure node-ip {{ node_public_ip.stdout_lines[0] }} at kubelet
+  lineinfile:
+    path: '/etc/sysconfig/kubelet'
+    line: "KUBELET_EXTRA_ARGS=--node-ip={{ node_public_ip.stdout_lines[0] }}"
+    regexp: 'KUBELET_EXTRA_ARGS='
+    state: present
+  notify: restart kubelet

@@ -1,0 +1,14 @@
+---
+# handlers file for base-centos
+
+- name: restart sshd
+  service:
+    name: sshd
+    state: restarted
+
+- name: restart docker
+  service:
+    name: docker
+    state: restarted
+    enabled: yes
+    daemon_reload: yes

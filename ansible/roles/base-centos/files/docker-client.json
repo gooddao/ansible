@@ -1,0 +1,7 @@
+{
+	"auths": {
+		"zlh-jfrog-container-1:8082": {
+			"auth": "YWRtaW46RmluZTAuLi4="
+		}
+	}
+}

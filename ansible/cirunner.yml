@@ -1,0 +1,14 @@
+- hosts: "cirunner*"
+  become: yes
+
+  vars:
+    gitlab_runner_coordinator_url: "http://192.168.110.251/"
+    gitlab_runners:
+      - name: "{{ vm_hostname }}"
+        token: "HgsyzEPXPm4rpFXvtpFd"
+        executor: "docker"
+        tags: "docker,vagrant,test"
+
+  roles:
+    - roles/base-centos
+    - roles/gitlab-runner

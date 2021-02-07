@@ -1,0 +1,26 @@
+
+k8s_common_add_packages_keys:
+- key: https://download.docker.com/linux/ubuntu/gpg
+- key: https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg
+
+k8s_common_add_packages_repositories:
+  repo: https://mirrors.aliyun.com/repo/Centos-7.repo
+
+
+k8s_common_add_packages_names:
+- name: curl
+- name: docker-ce
+- name: docker-ce-cli 
+- name: containerd.io
+- name: kubeadm 
+- name: kubelet 
+- name: kubectl
+
+k8s_common_remove_packages_names:
+- name: 
+
+k8s_common_admin_user:  "ych"
+k8s_common_admin_group: "ych"
+
+kubernetes_version: '1.19'
+kubernetes_version_kubeadm: 'stable-{{ kubernetes_version }}'

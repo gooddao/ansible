@@ -1,0 +1,38 @@
+---
+# tasks file for base-centos
+- name: set -o vi
+  lineinfile:
+    path: /etc/profile
+    remote_src: yes
+    line: "set -o vi"
+    state: present
+
+- name: Make sure .docker directory exists
+  file:
+    path: /root/.docker/
+    state: directory
+
+- name: Configure docker client
+  copy:
+    src: files/docker-client.json
+    dest: /root/.docker/config.json
+    force: yes
+
+- name: Configure local docker registry
+  copy:
+    src: files/docker-daemon.json
+    dest: /etc/docker/daemon.json
+    force: yes
+    remote_src: no
+  notify: restart docker
+
+- name: make sure login with password is on
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    remote_src: yes
+    line: "PasswordAuthentication yes"
+    regexp: "PasswordAuthentication no"
+    state: present
+  notify: restart sshd
+
+

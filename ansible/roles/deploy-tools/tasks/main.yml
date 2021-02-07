@@ -1,0 +1,39 @@
+---
+# tasks file for deploy-tools
+- name: Check if helm installed
+  stat:
+    path: /usr/bin/helm
+  register: helm_file
+
+- name: Download helm package
+  get_url:
+    url: "{{ helm_file_url }}"
+    dest: /root/helm.tgz
+    url_username: "{{ helm_url_user }}"
+    url_password: "{{ helm_url_password }}"
+  when: helm_file.stat.exists == false
+
+- name: Install helm to /usr/bin
+  shell: >
+    tar -xzvf /root/helm.tgz && rm /root/helm.tgz && cp linux-amd64/helm /usr/bin/helm &&
+    chmod +x /usr/bin/helm &&
+    rm -rf linux-amd64
+  when: helm_file.stat.exists == false
+  become: yes
+
+- name: Install ansible kuberentes plugin
+  shell: ansible-galaxy collection install community.kubernetes
+
+- name: copy setenv.sh
+  copy:
+    src: files/setenv.sh
+    dest: /root/
+    mode: 0755
+    remote_src: no
+
+- name: copy deploy.sh
+  copy:
+    src: files/deploy.sh
+    dest: /root/
+    mode: 0755
+    remote_src: no

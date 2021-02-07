@@ -1,0 +1,6 @@
+{
+  "registry-mirrors": [
+    "https://frz7i079.mirror.aliyuncs.com"
+  ],
+  "insecure-registries" : [ "zlh-jfrog-container-1:8082" ]
+}

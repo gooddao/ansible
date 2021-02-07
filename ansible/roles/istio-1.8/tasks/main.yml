@@ -1,0 +1,43 @@
+---
+# tasks file for istio-1.8
+
+- name: check if istioctl installed
+  command: ls -l /opt/istio-1.8.0/bin/istioctl
+  register: istioctl_file
+  ignore_errors: yes
+
+- name: copy istio files
+  copy:
+    src: files/istio-1.8.0
+    dest: /opt/
+  when: istioctl_file.rc != 0
+
+- name: make istioctl executable
+  file:
+    path: /opt/istio-1.8.0/bin/istioctl
+    mode: 0755
+
+- name: add path for istioctl
+  lineinfile:
+    path: /etc/profile
+    remote_src: yes
+    line: export PATH="$PATH:/opt/istio-1.8.0/bin"
+    state: present
+  when: istioctl_file.rc != 0
+
+- name: link istioctl
+  file:
+    path: /usr/local/bin/istioctl
+    src: /opt/istio-1.8.0/bin/istioctl
+    state: link
+
+- name: check if istio-1.8 installed
+  shell:
+    cmd: export PATH="$PATH:/usr/local/bin" && istioctl version
+  register: istioctl_version
+  ignore_errors: yes
+
+- name: install istio with default manifests
+  shell:
+    cmd: export PATH="$PATH:/usr/local/bin" && istioctl install --manifests=/opt/istio-1.8.0/manifests/ -y
+  when: "'no running Istio pods' in istioctl_version.stdout"

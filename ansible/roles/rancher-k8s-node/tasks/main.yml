@@ -1,0 +1,22 @@
+---
+# tasks file for rancher-k8s-baremetal
+- name: make docker restarted
+    service:
+      name: docker
+      state: restarted
+      enabled: yes
+      daemon_reload: yes
+
+- name: Register as node
+  community:
+    general:
+      docker_container:
+        name: rancher-agent
+        image: rancher/rancher-agent:v2.5.5
+        state: started
+        privileged: yes
+        restart-policy: unless-stopped
+        network_mode: host
+        detach: yes
+        volumes: "/etc/kubernetes:/etc/kubernetes,/var/run:/var/run"
+        command: "--server https://192.168.110.109 --token 27j7cxhm6sqh4vh66s7l88zjrpjltsd76snfbkqrwqctwh28zzsgrd --ca-checksum 89dc1771dbe0dfaf31729d69d16a22376c8a69411fde7b29879eae16bd96be3b"

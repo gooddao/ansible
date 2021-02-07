@@ -1,0 +1,47 @@
+---
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- include_tasks: setup-RedHat.yml
+  when: ansible_os_family == 'RedHat'
+
+- include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure dependencies are installed.
+  package: name=curl state=present
+
+- name: Install Kubernetes packages.
+  package:
+      name: "{{ item.name | default(item) }}"
+      state: "{{ item.state | default('present') }}"
+  notify: restart kubelet
+  with_items: "{{ kubernetes_packages }}"
+  become: yes
+
+- name: Remove swapfile from /etc/fstab
+  mount:
+     name: "{{ item }}"
+     fstype: swap
+     state: absent
+  with_items:
+     - swap
+     - none
+  become: yes
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+  become: yes
+
+- include_tasks: sysctl-setup.yml
+
+- include_tasks: kubelet-setup.yml
+
+- name: Ensure kubelet is started and enabled at boot.
+  service:
+    name: kubelet
+    state: started
+    enabled: true
+  become: yes
+
